@@ -974,7 +974,7 @@ GameObject:
   - component: {fileID: 1083782462}
   - component: {fileID: 1083782461}
   m_Layer: 5
-  m_Name: Text (TMP)
+  m_Name: ReloadTxt
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2496,7 +2496,7 @@ GameObject:
   - component: {fileID: 1986359597}
   - component: {fileID: 1986359596}
   m_Layer: 5
-  m_Name: Text (TMP)
+  m_Name: SaveTxt
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

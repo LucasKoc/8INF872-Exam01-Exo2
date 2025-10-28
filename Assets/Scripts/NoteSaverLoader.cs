@@ -28,6 +28,7 @@ public class NoteSaverLoader : MonoBehaviour
     private DateTime? _lastWriteUtc;
     private float _nextPollTime;
     private bool _loadingSilently;
+    private string _lastLoadedText;
 
     void Start()
     {
@@ -102,10 +103,25 @@ public class NoteSaverLoader : MonoBehaviour
                 Debug.LogWarning($"[LOAD] Fichier introuvable: {path}");
                 return;
             }
+
             var text = File.ReadAllText(path, Encoding.UTF8);
+
+            // 1) Met à jour un label indépendant (si tu en as un)
             if (labelAffichage != null) labelAffichage.text = text;
+
+            // 2) Met à jour l’InputField correctement (clé !)
+            if (inputTexte != null)
+            {
+                // évite d’émettre des events, puis force l’affichage interne
+                inputTexte.SetTextWithoutNotify(text);
+                inputTexte.ForceLabelUpdate();        // important pour rafraîchir l’UI
+                // optionnel: remet le caret en fin
+                inputTexte.caretPosition = text.Length;
+                inputTexte.selectionAnchorPosition = inputTexte.selectionFocusPosition = inputTexte.caretPosition;
+            }
+
             _lastWriteUtc = File.GetLastWriteTimeUtc(path);
-            if (!_loadingSilently) Debug.Log($"[LOAD] {path}");
+            Debug.Log($"[LOAD] {path} (len={text.Length})");
         }
         catch (Exception ex)
         {
@@ -119,11 +135,25 @@ public class NoteSaverLoader : MonoBehaviour
         try
         {
             if (!File.Exists(path)) return;
+
             var lastWrite = File.GetLastWriteTimeUtc(path);
             if (_lastWriteUtc == null || lastWrite > _lastWriteUtc.Value)
             {
                 _loadingSilently = true;
-                Load();
+                Load();                // horodatage a changé
+                _loadingSilently = false;
+                return;
+            }
+
+            // Fallback : compare le contenu (au cas où le timestamp n’a pas bougé)
+            var text = File.ReadAllText(path, Encoding.UTF8);
+            if (_lastLoadedText != text)
+            {
+                _loadingSilently = true;
+                if (labelAffichage != null) labelAffichage.text = text;
+                _lastLoadedText = text;
+                _lastWriteUtc = lastWrite;
+                Debug.Log("[AUTO-RELOAD] contenu modifié sans changement d'horodatage");
                 _loadingSilently = false;
             }
         }
@@ -140,7 +170,7 @@ public class NoteSaverLoader : MonoBehaviour
             var candidate = inputChemin.text?.Trim();
             if (!string.IsNullOrEmpty(candidate))
             {
-                _currentPath = candidate;
+                _currentPath = ExpandPath(candidate); // ← important
                 return _currentPath;
             }
         }
